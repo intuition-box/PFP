@@ -15,7 +15,7 @@
         }
 
         body {
-            background-color: #0b0b0b;
+            background: linear-gradient(to bottom, #0b0b0b, #4a1e1e);
             font-family: 'Inter', sans-serif;
             display: flex;
             justify-content: center;
@@ -25,7 +25,7 @@
         }
 
         .container {
-            background-color: #0b0b0b;
+            background-color: #2e1e1e;
             border-radius: 12px;
             padding: 2rem;
             text-align: center;
@@ -43,14 +43,86 @@
             font-size: 2.5em;
             font-weight: 700;
             color: #ffffff;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         p {
             font-size: 0.9em;
             font-weight: 400;
             color: #ffffff;
+            margin-bottom: 2rem;
+        }
+
+        .preview-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        canvas {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background-color: #ffffff;
+        }
+
+        .frame-options {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
             margin-bottom: 1.5rem;
+        }
+
+        .frame-btn {
+            background-color: #333333;
+            color: #ffffff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 400;
+        }
+
+        .frame-btn:hover {
+            background-color: #444444;
+        }
+
+        .frame-btn.active {
+            background-color: #555555;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        button, label {
+            background-color: #333333;
+            color: #ffffff;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 400;
+        }
+
+        button:hover, label:hover {
+            background-color: #444444;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .footer {
+            font-size: 0.8em;
+            font-weight: 400;
+            color: #ffffff;
+            margin-top: 1rem;
         }
 
         @media (max-width: 600px) {
@@ -71,14 +143,137 @@
             p {
                 font-size: 0.85em;
             }
+
+            canvas {
+                width: 250px;
+                height: 250px;
+            }
+
+            .frame-options {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .frame-btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85em;
+            }
+
+            button, label {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.85em;
+            }
+
+            .footer {
+                font-size: 0.75em;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <img src="mainlogo.png" alt="Intuition Logo" class="logo">
+        <img src="https://raw.githubusercontent.com/PellerC/intuits-PFPs/main/mainlogo.png" alt="Intuition Logo" class="logo">
         <h1>Intuition PFP Generator</h1>
         <p>Join our community and transform your profile picture into a unique Intuition PFP with custom borders!</p>
+        <div class="preview-container">
+            <canvas id="preview" width="500" height="500"></canvas>
+        </div>
+        <div class="frame-options">
+            <button class="frame-btn" data-frame="https://raw.githubusercontent.com/PellerC/intuits-PFPs/main/frame1.png">Frame 1</button>
+            <button class="frame-btn" data-frame="https://raw.githubusercontent.com/PellerC/intuits-PFPs/main/frame2.png">Frame 2</button>
+            <button class="frame-btn" data-frame="https://raw.githubusercontent.com/PellerC/intuits-PFPs/main/frame3.png">Frame 3</button>
+        </div>
+        <div class="controls">
+            <label for="upload">Upload Image</label>
+            <input type="file" id="upload" accept="image/*">
+            <button id="download">Download PFP</button>
+        </div>
+        <div class="footer">built with ❤️ by Newbie</div>
     </div>
+    <script>
+        const canvas = document.getElementById('preview');
+        const ctx = canvas.getContext('2d');
+        let userImage = null;
+        let currentFrame = null;
+        const size = 500; // Canvas drawing size
+
+        function drawPreview() {
+            ctx.clearRect(0, 0, size, size);
+
+            // Apply circular mask
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            ctx.clip();
+
+            // Draw user image or white background
+            if (userImage) {
+                const ratio = Math.max(size / userImage.width, size / userImage.height);
+                const newWidth = userImage.width * ratio;
+                const newHeight = userImage.height * ratio;
+                const offsetX = (newWidth - size) / 2;
+                const offsetY = (newHeight - size) / 2;
+                ctx.drawImage(userImage, -offsetX, -offsetY, newWidth, newHeight);
+            } else {
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+            }
+
+            ctx.restore();
+
+            // Draw frame outside the clip
+            if (currentFrame) {
+                ctx.drawImage(currentFrame, 0, 0, size, size);
+            }
+        }
+
+        // Initial draw for white circle
+        drawPreview();
+
+        // Upload handler
+        document.getElementById('upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        userImage = img;
+                        drawPreview();
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Frame selection
+        document.querySelectorAll('.frame-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.frame-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const src = btn.dataset.frame;
+                const img = new Image();
+                img.onload = () => {
+                    currentFrame = img;
+                    drawPreview();
+                };
+                img.src = src;
+            });
+        });
+
+        // Download handler
+        document.getElementById('download').addEventListener('click', () => {
+            if (!userImage) {
+                alert('Please upload an image first!');
+                return;
+            }
+            const data = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = data;
+            a.download = 'intuition-pfp.png';
+            a.click();
+        });
+    </script>
 </body>
 </html>
