@@ -239,7 +239,15 @@
         function drawPreview() {
             ctx.clearRect(0, 0, size, size);
 
-            // Draw user image or white background
+            // Set background color based on frame
+            if (currentFrame && currentFrame.src.includes('frame3.png')) {
+                ctx.fillStyle = '#000000';
+            } else {
+                ctx.fillStyle = '#ffffff';
+            }
+            ctx.fillRect(0, 0, size, size);
+
+            // Draw user image
             if (userImage) {
                 const ratio = Math.max(size / userImage.width, size / userImage.height) * scale;
                 const newWidth = userImage.width * ratio;
@@ -247,12 +255,9 @@
                 const offsetX = (size - newWidth) / 2;
                 const offsetY = (size - newHeight) / 2;
                 ctx.drawImage(userImage, offsetX, offsetY, newWidth, newHeight);
-            } else {
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, size, size);
             }
 
-            // Draw frame outside the clip
+            // Draw frame
             if (currentFrame) {
                 ctx.drawImage(currentFrame, 0, 0, size, size);
             }
