@@ -254,6 +254,7 @@
                 btn.classList.add('active');
                 const src = btn.dataset.frame;
                 const img = new Image();
+                img.crossOrigin = 'anonymous';
                 img.onload = () => {
                     currentFrame = img;
                     drawPreview();
@@ -268,11 +269,19 @@
                 alert('Please upload an image first!');
                 return;
             }
-            const data = canvas.toDataURL('image/png');
-            const a = document.createElement('a');
-            a.href = data;
-            a.download = 'intuition-pfp.png';
-            a.click();
+            // Force redraw to ensure latest state
+            drawPreview();
+            // Use toBlob for download
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'intuition-pfp.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
         });
     </script>
 </body>
