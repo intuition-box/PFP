@@ -56,14 +56,42 @@
         .preview-container {
             display: flex;
             justify-content: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
+            position: relative;
         }
 
         canvas {
             width: 300px;
             height: 300px;
-            border-radius: 50%;
             background-color: #ffffff;
+        }
+
+        .adjust-controls {
+            display: none;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .adjust-controls.active {
+            display: flex;
+        }
+
+        .resize-btn {
+            background-color: #333333;
+            color: #ffffff;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            width: 30px;
+            height: 30px;
+        }
+
+        .resize-btn:hover {
+            background-color: #444444;
         }
 
         .frame-options {
@@ -164,6 +192,12 @@
                 font-size: 0.85em;
             }
 
+            .resize-btn {
+                width: 25px;
+                height: 25px;
+                font-size: 0.9em;
+            }
+
             .footer {
                 font-size: 0.75em;
             }
@@ -177,6 +211,10 @@
         <p>Join our community and transform your profile picture into a unique Intuition PFP with custom borders!</p>
         <div class="preview-container">
             <canvas id="preview" width="500" height="500"></canvas>
+        </div>
+        <div class="adjust-controls" id="adjustControls">
+            <button class="resize-btn" onclick="resizeImage(-0.1)">-</button>
+            <button class="resize-btn" onclick="resizeImage(0.1)">+</button>
         </div>
         <div class="frame-options">
             <button class="frame-btn" data-frame="https://raw.githubusercontent.com/PellerC/intuits-PFPs/main/frame1.png">Frame 1</button>
@@ -195,31 +233,24 @@
         const ctx = canvas.getContext('2d');
         let userImage = null;
         let currentFrame = null;
-        const size = 500; // Canvas drawing size
+        const size = 500;
+        let scale = 1.0;
 
         function drawPreview() {
             ctx.clearRect(0, 0, size, size);
 
-            // Apply circular mask
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-            ctx.clip();
-
             // Draw user image or white background
             if (userImage) {
-                const ratio = Math.max(size / userImage.width, size / userImage.height);
+                const ratio = Math.max(size / userImage.width, size / userImage.height) * scale;
                 const newWidth = userImage.width * ratio;
                 const newHeight = userImage.height * ratio;
-                const offsetX = (newWidth - size) / 2;
-                const offsetY = (newHeight - size) / 2;
-                ctx.drawImage(userImage, -offsetX, -offsetY, newWidth, newHeight);
+                const offsetX = (size - newWidth) / 2;
+                const offsetY = (size - newHeight) / 2;
+                ctx.drawImage(userImage, offsetX, offsetY, newWidth, newHeight);
             } else {
                 ctx.fillStyle = '#ffffff';
-                ctx.fill();
+                ctx.fillRect(0, 0, size, size);
             }
-
-            ctx.restore();
 
             // Draw frame outside the clip
             if (currentFrame) {
@@ -227,7 +258,7 @@
             }
         }
 
-        // Initial draw for white circle
+        // Initial draw for white rectangle
         drawPreview();
 
         // Upload handler
@@ -237,8 +268,11 @@
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     const img = new Image();
+                    img.crossOrigin = 'anonymous';
                     img.onload = () => {
                         userImage = img;
+                        scale = 1.0;
+                        document.getElementById('adjustControls').classList.add('active');
                         drawPreview();
                     };
                     img.src = ev.target.result;
@@ -263,15 +297,24 @@
             });
         });
 
+        // Resize image function
+        function resizeImage(delta) {
+            if (userImage) {
+                const newScale = Math.max(0.1, Math.min(2.0, scale + delta)); // Limit scale between 0.1 and 2.0
+                if (newScale !== scale) {
+                    scale = newScale;
+                    drawPreview();
+                }
+            }
+        }
+
         // Download handler
         document.getElementById('download').addEventListener('click', () => {
             if (!userImage) {
                 alert('Please upload an image first!');
                 return;
             }
-            // Force redraw to ensure latest state
             drawPreview();
-            // Use toBlob for download
             canvas.toBlob((blob) => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
