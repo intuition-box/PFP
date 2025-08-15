@@ -63,7 +63,7 @@
         canvas {
             width: 300px;
             height: 300px;
-            background-color: #ffffff;
+            background-color: transparent;
         }
 
         .adjust-controls {
@@ -213,8 +213,8 @@
             <canvas id="preview" width="500" height="500"></canvas>
         </div>
         <div class="adjust-controls" id="adjustControls">
-            <button class="resize-btn" onclick="resizeImage(-0.1)">-</button>
-            <button class="resize-btn" onclick="resizeImage(0.1)">+</button>
+            <button class="resize-btn" onclick="resizeFrame(-0.1)">-</button>
+            <button class="resize-btn" onclick="resizeFrame(0.1)">+</button>
         </div>
         <div class="frame-options">
             <button class="frame-btn" data-frame="https://raw.githubusercontent.com/PellerC/intuits-PFPs/main/frame1.png">Frame 1</button>
@@ -234,32 +234,33 @@
         let userImage = null;
         let currentFrame = null;
         const size = 500;
-        let scale = 1.0;
+        let frameScale = 1.0;
 
         function drawPreview() {
             ctx.clearRect(0, 0, size, size);
 
-            // Set background color based on frame
-            if (currentFrame && currentFrame.src.includes('frame3.png')) {
-                ctx.fillStyle = '#000000';
-            } else {
-                ctx.fillStyle = '#ffffff';
-            }
-            ctx.fillRect(0, 0, size, size);
-
-            // Draw user image
+            // Draw user image as background (fixed scale to fit canvas)
             if (userImage) {
-                const ratio = Math.max(size / userImage.width, size / userImage.height) * scale;
-                const newWidth = userImage.width * ratio;
-                const newHeight = userImage.height * ratio;
-                const offsetX = (size - newWidth) / 2;
-                const offsetY = (size - newHeight) / 2;
-                ctx.drawImage(userImage, offsetX, offsetY, newWidth, newHeight);
+                const imageRatio = Math.max(size / userImage.width, size / userImage.height);
+                const imageWidth = userImage.width * imageRatio;
+                const imageHeight = userImage.height * imageRatio;
+                const imageOffsetX = (size - imageWidth) / 2;
+                const imageOffsetY = (size - imageHeight) / 2;
+                ctx.drawImage(userImage, imageOffsetX, imageOffsetY, imageWidth, imageHeight);
+            } else {
+                // Default background if no image
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, size, size);
             }
 
-            // Draw frame
+            // Draw frame on top (scaled)
             if (currentFrame) {
-                ctx.drawImage(currentFrame, 0, 0, size, size);
+                const frameRatio = Math.max(size / currentFrame.width, size / currentFrame.height) * frameScale;
+                const frameWidth = currentFrame.width * frameRatio;
+                const frameHeight = currentFrame.height * frameRatio;
+                const frameOffsetX = (size - frameWidth) / 2;
+                const frameOffsetY = (size - frameHeight) / 2;
+                ctx.drawImage(currentFrame, frameOffsetX, frameOffsetY, frameWidth, frameHeight);
             }
         }
 
@@ -276,7 +277,6 @@
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
                         userImage = img;
-                        scale = 1.0;
                         document.getElementById('adjustControls').classList.add('active');
                         drawPreview();
                     };
@@ -302,12 +302,12 @@
             });
         });
 
-        // Resize image function
-        function resizeImage(delta) {
-            if (userImage) {
-                const newScale = Math.max(0.1, Math.min(2.0, scale + delta)); // Limit scale between 0.1 and 2.0
-                if (newScale !== scale) {
-                    scale = newScale;
+        // Resize frame function
+        function resizeFrame(delta) {
+            if (currentFrame) {
+                const newScale = Math.max(0.1, Math.min(2.0, frameScale + delta)); // Limit scale between 0.1 and 2.0
+                if (newScale !== frameScale) {
+                    frameScale = newScale;
                     drawPreview();
                 }
             }
